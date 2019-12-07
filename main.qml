@@ -86,22 +86,14 @@ ApplicationWindow {
     property bool themeTransition: false
 
     // fiat price conversion
-    property real fiatPriceXMRUSD: 0
-    property real fiatPriceXMREUR: 0
+    property real fiatPriceMCNUSD: 0
+    property real fiatPriceMCNEUR: 0
     property var fiatPriceAPIs: {
         return {
-            "kraken": {
-                "xmrusd": "https://api.kraken.com/0/public/Ticker?pair=XMRUSD",
-                "xmreur": "https://api.kraken.com/0/public/Ticker?pair=XMREUR"
-            },
             "coingecko": {
-                "xmrusd": "https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd",
-                "xmreur": "https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=eur"
-            },
-            "cryptocompare": {
-                "xmrusd": "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=USD",
-                "xmreur": "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=EUR",
-            }
+                "mcnusd": "https://api.coingecko.com/api/v3/simple/price?ids=moneta-verde&vs_currencies=usd",
+                "mcneur": "https://api.coingecko.com/api/v3/simple/price?ids=moneta-verde&vs_currencies=eur"
+           }
         }
     }
 
@@ -422,8 +414,8 @@ ApplicationWindow {
     }
 
     function onUriHandler(uri){
-        if(uri.startsWith("monero://")){
-            var address = uri.substring("monero://".length);
+        if(uri.startsWith("monetaverde://")){
+            var address = uri.substring("monetaverde://".length);
 
             var params = {}
             if(address.length === 0) return;
@@ -727,7 +719,7 @@ ApplicationWindow {
         currentWallet.startRefresh();
         daemonRunning = false;
         informationPopup.title = qsTr("Daemon failed to start") + translationManager.emptyString;
-        informationPopup.text  = qsTr("Please check your wallet and daemon log for errors. You can also try to start %1 manually.").arg((isWindows)? "monerod.exe" : "monerod")
+        informationPopup.text  = qsTr("Please check your wallet and daemon log for errors. You can also try to start %1 manually.").arg((isWindows)? "monetaverded.exe" : "monetaverded")
         informationPopup.icon  = StandardIcon.Critical
         informationPopup.onCloseCallback = null
         informationPopup.open();
@@ -770,7 +762,7 @@ ApplicationWindow {
 
     function onWalletMoneySent(txId, amount) {
         // refresh transaction history here
-        console.log("monero sent found")
+        console.log("monetaverde sent found")
         currentWallet.history.refresh(currentWallet.currentSubaddressAccount); // this will refresh model
 
         if(middlePanel.state == "History")
@@ -983,7 +975,7 @@ ApplicationWindow {
                     txid_text += ", "
                 txid_text += txid[i]
             }
-            informationPopup.text  = (viewOnly)? qsTr("Transaction saved to file: %1").arg(path) : qsTr("Monero sent successfully: %1 transaction(s) ").arg(txid.length) + txid_text + translationManager.emptyString
+            informationPopup.text  = (viewOnly)? qsTr("Transaction saved to file: %1").arg(path) : qsTr("MonetaVerde sent successfully: %1 transaction(s) ").arg(txid.length) + txid_text + translationManager.emptyString
             informationPopup.icon  = StandardIcon.Information
             if (transactionDescription.length > 0) {
                 for (var i = 0; i < txid.length; ++i)
@@ -1063,10 +1055,10 @@ ApplicationWindow {
                 informationPopup.icon = StandardIcon.Critical;
             } else if (received > 0) {
                 if (in_pool) {
-                    informationPopup.text = qsTr("This address received %1 monero, but the transaction is not yet mined").arg(walletManager.displayAmount(received));
+                    informationPopup.text = qsTr("This address received %1 monetaverde, but the transaction is not yet mined").arg(walletManager.displayAmount(received));
                 }
                 else {
-                    informationPopup.text = qsTr("This address received %1 monero, with %2 confirmation(s).").arg(walletManager.displayAmount(received)).arg(confirmations);
+                    informationPopup.text = qsTr("This address received %1 monetaverde, with %2 confirmation(s).").arg(walletManager.displayAmount(received)).arg(confirmations);
                 }
             }
             else {
@@ -1164,16 +1156,16 @@ ApplicationWindow {
                 return;
             }
 
-            var key = currency === "xmreur" ? "XXMRZEUR" : "XXMRZUSD";
+            var key = currency === "mcneur" ? "XXMRZEUR" : "XXMRZUSD";
             var ticker = resp.result[key]["o"];
             return ticker;
         } else if(resp._url.startsWith("https://api.coingecko.com/api/v3/")){
-            var key = currency === "xmreur" ? "eur" : "usd";
-            if(!resp.hasOwnProperty("monero") || !resp["monero"].hasOwnProperty(key)){
+            var key = currency === "mcneur" ? "eur" : "usd";
+            if(!resp.hasOwnProperty("moneta-verde") || !resp["moneta-verde"].hasOwnProperty(key)){
                 appWindow.fiatApiError("Coingecko API has error(s)");
                 return;
             }
-            return resp["monero"][key];
+            return resp["moneta-verde"][key];
         } else if(resp._url.startsWith("https://min-api.cryptocompare.com/data/")){
             var key = currency === "xmreur" ? "EUR" : "USD";
             if(!resp.hasOwnProperty(key)){
@@ -1222,10 +1214,10 @@ ApplicationWindow {
             return;
         }
 
-        if(persistentSettings.fiatPriceCurrency === "xmrusd")
-            appWindow.fiatPriceXMRUSD = ticker;
-        else if(persistentSettings.fiatPriceCurrency === "xmreur")
-            appWindow.fiatPriceXMREUR = ticker;
+        if(persistentSettings.fiatPriceCurrency === "mcnusd")
+            appWindow.fiatPriceMCNUSD = ticker;
+        else if(persistentSettings.fiatPriceCurrency === "mcneur")
+            appWindow.fiatPriceMCNEUR = ticker;
 
         appWindow.updateBalance();
     }
@@ -1253,9 +1245,9 @@ ApplicationWindow {
 
     function fiatApiCurrencySymbol() {
         switch (persistentSettings.fiatPriceCurrency) {
-            case "xmrusd":
+            case "mcnusd":
                 return "USD";
-            case "xmreur":
+            case "mcneur":
                 return "EUR";
             default:
                 console.error("unsupported currency", persistentSettings.fiatPriceCurrency);
@@ -1264,7 +1256,7 @@ ApplicationWindow {
     }
 
     function fiatApiConvertToFiat(amount) {
-        var ticker = persistentSettings.fiatPriceCurrency === "xmrusd" ? appWindow.fiatPriceXMRUSD : appWindow.fiatPriceXMREUR;
+        var ticker = persistentSettings.fiatPriceCurrency === "mcnusd" ? appWindow.fiatPriceMCNUSD : appWindow.fiatPriceMCNEUR;
         if(ticker <= 0){
             console.log(fiatApiError("Invalid ticker value: " + ticker));
             return "?.??";
@@ -1356,7 +1348,7 @@ ApplicationWindow {
         id: persistentSettings
         fileName: {
             if(isTails && tailsUsePersistence)
-                return homePath + "/Persistent/Monero/monero-core.conf";
+                return homePath + "/Persistent/MonetaVerde/monetaverde-core.conf";
             return "";
         }
 
@@ -2002,9 +1994,9 @@ ApplicationWindow {
             var user_url = parts[2]
             var msg = ""
             if (isMac || isWindows || isLinux) {
-                msg = qsTr("New version of Monero v%1 is available.<br><br>Download:<br>%2<br><br>SHA256 Hash:<br>%3").arg(version).arg(user_url).arg(hash) + translationManager.emptyString
+                msg = qsTr("New version of MonetaVerde v%1 is available.<br><br>Download:<br>%2<br><br>SHA256 Hash:<br>%3").arg(version).arg(user_url).arg(hash) + translationManager.emptyString
             } else {
-                msg = qsTr("New version of Monero v%1 is available. Check out getmonero.org").arg(version) + translationManager.emptyString
+                msg = qsTr("New version of MonetaVerde v%1 is available. Check out mcn.green").arg(version) + translationManager.emptyString
             }
             notifier.show(msg)
         } else {
@@ -2013,7 +2005,7 @@ ApplicationWindow {
     }
 
     function checkUpdates() {
-        walletManager.checkUpdatesAsync("monero-gui", "gui")
+        walletManager.checkUpdatesAsync("monetaverde-gui", "gui")
     }
 
     Timer {
@@ -2076,11 +2068,11 @@ ApplicationWindow {
     function getDefaultDaemonRpcPort(networkType) {
         switch (networkType) {
             case NetworkType.STAGENET:
-                return 38081;
+                return 56081;
             case NetworkType.TESTNET:
-                return 28081;
+                return 46081;
             default:
-                return 18081;
+                return 36081;
         }
     }
 
